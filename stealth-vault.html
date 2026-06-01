@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STEALTH VAULT — Ẩn File Office</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;700;800&display=swap');
+
+  :root {
+    --bg: #040810;
+    --surface: #080f1e;
+    --card: #0b1424;
+    --border: #0f2040;
+    --accent: #00ffe0;
+    --accent2: #0080ff;
+    --warn: #ff4060;
+    --text: #c8d8f0;
+    --muted: #3a5070;
+    --glow: 0 0 20px rgba(0,255,224,0.25);
+    --glow2: 0 0 40px rgba(0,255,224,0.1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,224,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,224,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    animation: gridMove 20s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  @keyframes gridMove {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(40px); }
+  }
+
+  /* Scan line effect */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -100%;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    animation: scan 4s linear infinite;
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  @keyframes scan {
+    0% { top: -2px; }
+    100% { top: 100%; }
+  }
+
+  .container {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    margin-bottom: 50px;
+    animation: fadeDown 0.8s ease;
+  }
+
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .logo-icon {
+    width: 44px;
+    height: 44px;
+    border: 1.5px solid var(--accent);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    box-shadow: var(--glow);
+    animation: pulse 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 15px rgba(0,255,224,0.3); }
+    50% { box-shadow: 0 0 30px rgba(0,255,224,0.6); }
+  }
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .badge {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 4px 12px;
+    border: 1px solid rgba(0,255,224,0.2);
+    border-radius: 20px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 2px;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 28px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 4px;
+    animation: fadeUp 0.8s ease 0.2s both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .tab {
+    flex: 1;
+    padding: 12px;
+    text-align: center;
+    border-radius: 9px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    transition: all 0.3s ease;
+    user-select: none;
+  }
+
+  .tab.active {
+    background: linear-gradient(135deg, rgba(0,255,224,0.12), rgba(0,128,255,0.08));
+    color: var(--accent);
+    box-shadow: inset 0 0 0 1px rgba(0,255,224,0.2);
+  }
+
+  .tab:hover:not(.active) {
+    color: var(--text);
+    background: rgba(255,255,255,0.03);
+  }
+
+  /* Cards */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    animation: fadeUp 0.8s ease 0.3s both;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.5;
+  }
+
+  /* Drop zone */
+  .drop-zone {
+    border: 1.5px dashed var(--border);
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    margin-bottom: 24px;
+    background: rgba(0,255,224,0.015);
+  }
+
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--accent);
+    background: rgba(0,255,224,0.05);
+    box-shadow: inset 0 0 30px rgba(0,255,224,0.05);
+  }
+
+  .drop-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .drop-icon {
+    font-size: 3rem;
+    margin-bottom: 12px;
+    display: block;
+    filter: drop-shadow(0 0 8px rgba(0,255,224,0.3));
+  }
+
+  .drop-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+
+  .drop-hint {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  /* File preview */
+  .file-preview {
+    display: none;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: rgba(0,255,224,0.04);
+    border: 1px solid rgba(0,255,224,0.15);
+    border-radius: 10px;
+    margin-bottom: 24px;
+  }
+
+  .file-preview.show { display: flex; }
+
+  .file-icon-wrap {
+    width: 42px;
+    height: 42px;
+    background: rgba(0,255,224,0.1);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+  }
+
+  .file-info { flex: 1; min-width: 0; }
+
+  .file-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--accent);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .file-size {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .file-remove {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 4px;
+    transition: color 0.2s;
+  }
+
+  .file-remove:hover { color: var(--warn); }
+
+  /* Form fields */
+  .field {
+    margin-bottom: 20px;
+  }
+
+  label {
+    display: block;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .input-wrap {
+    position: relative;
+  }
+
+  input[type="text"], input[type="password"] {
+    width: 100%;
+    padding: 13px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.9rem;
+    letter-spacing: 2px;
+    outline: none;
+    transition: all 0.3s ease;
+  }
+
+  input[type="text"]:focus, input[type="password"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,255,224,0.08);
+  }
+
+  .eye-btn {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1rem;
+    transition: color 0.2s;
+    padding: 4px;
+  }
+
+  .eye-btn:hover { color: var(--accent); }
+
+  /* Strength meter */
+  .strength-wrap {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+  }
+
+  .strength-bar {
+    flex: 1;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--border);
+    transition: background 0.4s ease;
+  }
+
+  .strength-bar.weak { background: var(--warn); }
+  .strength-bar.medium { background: #ffaa00; }
+  .strength-bar.strong { background: var(--accent); }
+
+  .strength-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-top: 5px;
+    letter-spacing: 1px;
+  }
+
+  /* Button */
+  .btn {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 11px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 800;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #040810;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0,255,224,0.3);
+  }
+
+  .btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .btn-primary:hover::before { opacity: 1; }
+
+  .btn-danger {
+    background: transparent;
+    border: 1.5px solid var(--warn);
+    color: var(--warn);
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    background: rgba(255,64,96,0.1);
+    box-shadow: 0 0 20px rgba(255,64,96,0.2);
+    transform: translateY(-2px);
+  }
+
+  /* Progress */
+  .progress-wrap {
+    display: none;
+    margin-bottom: 20px;
+  }
+
+  .progress-wrap.show { display: block; }
+
+  .progress-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .progress-bar-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    height: 6px;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 4px;
+    transition: width 0.3s ease;
+    width: 0%;
+    box-shadow: 0 0 10px rgba(0,255,224,0.5);
+  }
+
+  /* Status messages */
+  .status {
+    display: none;
+    padding: 14px 16px;
+    border-radius: 10px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+    margin-top: 16px;
+    line-height: 1.6;
+  }
+
+  .status.show { display: block; }
+
+  .status.success {
+    background: rgba(0,255,224,0.06);
+    border: 1px solid rgba(0,255,224,0.2);
+    color: var(--accent);
+  }
+
+  .status.error {
+    background: rgba(255,64,96,0.06);
+    border: 1px solid rgba(255,64,96,0.2);
+    color: var(--warn);
+  }
+
+  .status.info {
+    background: rgba(0,128,255,0.06);
+    border: 1px solid rgba(0,128,255,0.2);
+    color: var(--accent2);
+  }
+
+  /* Info box */
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 28px;
+  }
+
+  .info-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 12px;
+    text-align: center;
+  }
+
+  .info-item .val {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--accent);
+    font-weight: bold;
+    letter-spacing: 1px;
+  }
+
+  .info-item .key {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--muted);
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+
+  /* Section divider */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 24px 0;
+  }
+
+  /* Panel switch */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Tooltip */
+  .tooltip-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding: 10px 14px;
+    background: rgba(0,128,255,0.04);
+    border: 1px solid rgba(0,128,255,0.12);
+    border-radius: 8px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    line-height: 1.5;
+    letter-spacing: 0.5px;
+  }
+
+  .tooltip-row .icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+    color: var(--accent2);
+  }
+
+  /* Responsive */
+  @media (max-width: 480px) {
+    h1 { font-size: 1.4rem; letter-spacing: 4px; }
+    .card { padding: 20px; }
+    .info-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🛡️</div>
+      <h1>Stealth Vault</h1>
+    </div>
+    <div class="subtitle">Bảo vệ tài liệu Office bằng mã hóa AES-256</div>
+    <span class="badge">🔒 AES-GCM · PBKDF2 · 100K ITERATIONS</span>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('encrypt')">🔐 Mã Hóa</div>
+    <div class="tab" onclick="switchTab('decrypt')">🔓 Giải Mã</div>
+  </div>
+
+  <!-- ENCRYPT PANEL -->
+  <div class="panel active card" id="panel-encrypt">
+
+    <div class="tooltip-row">
+      <span class="icon">ℹ️</span>
+      <span>File sẽ được mã hóa chuẩn AES-GCM 256-bit. Chỉ người có mật khẩu đúng mới mở được. File gốc không bị xóa.</span>
+    </div>
+
+    <div class="drop-zone" id="dropzone-enc"
+         ondragover="event.preventDefault(); this.classList.add('dragover')"
+         ondragleave="this.classList.remove('dragover')"
+         ondrop="handleDrop(event,'enc')">
+      <input type="file" id="file-enc"
+             accept=".doc,.docx,.xls,.xlsx,.ppt,.pptx,.pdf,.txt,.csv,.odt,.ods,.odp"
+             onchange="handleFileSelect(event,'enc')">
+      <span class="drop-icon">📂</span>
+      <div class="drop-title">Kéo thả hoặc nhấn để chọn file</div>
+      <div class="drop-hint">Hỗ trợ: .docx · .xlsx · .pptx · .pdf · .txt · .csv</div>
+    </div>
+
+    <div class="file-preview" id="preview-enc">
+      <div class="file-icon-wrap" id="preview-icon-enc">📄</div>
+      <div class="file-info">
+        <div class="file-name" id="preview-name-enc"></div>
+        <div class="file-size" id="preview-size-enc"></div>
+      </div>
+      <button class="file-remove" onclick="clearFile('enc')" title="Xóa file">✕</button>
+    </div>
+
+    <div class="field">
+      <label>Mật Khẩu Mã Hóa</label>
+      <div class="input-wrap">
+        <input type="password" id="pass-enc" placeholder="Nhập mật khẩu mạnh..."
+               oninput="updateStrength(this.value)" autocomplete="new-password">
+        <button class="eye-btn" onclick="togglePass('pass-enc', this)">👁️</button>
+      </div>
+      <div class="strength-wrap" id="strength-bars">
+        <div class="strength-bar" id="sb1"></div>
+        <div class="strength-bar" id="sb2"></div>
+        <div class="strength-bar" id="sb3"></div>
+        <div class="strength-bar" id="sb4"></div>
+      </div>
+      <div class="strength-label" id="strength-label">Nhập mật khẩu để kiểm tra độ mạnh</div>
+    </div>
+
+    <div class="field">
+      <label>Tên File Đầu Ra (tuỳ chọn)</label>
+      <input type="text" id="output-name-enc" placeholder="Để trống = tự động đặt tên">
+    </div>
+
+    <div class="progress-wrap" id="prog-enc">
+      <div class="progress-label">
+        <span id="prog-label-enc">ENCRYPTING...</span>
+        <span id="prog-pct-enc">0%</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar" id="prog-bar-enc"></div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="encryptFile()" id="btn-enc">
+      🔐 MÃ HÓA & TẢI XUỐNG
+    </button>
+
+    <div class="status" id="status-enc"></div>
+
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="val">AES-256</div>
+        <div class="key">Thuật Toán</div>
+      </div>
+      <div class="info-item">
+        <div class="val">GCM</div>
+        <div class="key">Chế Độ</div>
+      </div>
+      <div class="info-item">
+        <div class="val">100K</div>
+        <div class="key">PBKDF2 Iters</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DECRYPT PANEL -->
+  <div class="panel card" id="panel-decrypt">
+
+    <div class="tooltip-row">
+      <span class="icon">ℹ️</span>
+      <span>Chọn file đã được Stealth Vault mã hóa (.vault). Nhập đúng mật khẩu để khôi phục file gốc.</span>
+    </div>
+
+    <div class="drop-zone" id="dropzone-dec"
+         ondragover="event.preventDefault(); this.classList.add('dragover')"
+         ondragleave="this.classList.remove('dragover')"
+         ondrop="handleDrop(event,'dec')">
+      <input type="file" id="file-dec" accept=".vault"
+             onchange="handleFileSelect(event,'dec')">
+      <span class="drop-icon">🗝️</span>
+      <div class="drop-title">Chọn file đã mã hóa (.vault)</div>
+      <div class="drop-hint">Chỉ hỗ trợ file được tạo từ Stealth Vault</div>
+    </div>
+
+    <div class="file-preview" id="preview-dec">
+      <div class="file-icon-wrap" id="preview-icon-dec">🔒</div>
+      <div class="file-info">
+        <div class="file-name" id="preview-name-dec"></div>
+        <div class="file-size" id="preview-size-dec"></div>
+      </div>
+      <button class="file-remove" onclick="clearFile('dec')" title="Xóa file">✕</button>
+    </div>
+
+    <div class="field">
+      <label>Mật Khẩu Giải Mã</label>
+      <div class="input-wrap">
+        <input type="password" id="pass-dec" placeholder="Nhập mật khẩu đã dùng khi mã hóa..."
+               autocomplete="current-password">
+        <button class="eye-btn" onclick="togglePass('pass-dec', this)">👁️</button>
+      </div>
+    </div>
+
+    <div class="progress-wrap" id="prog-dec">
+      <div class="progress-label">
+        <span id="prog-label-dec">DECRYPTING...</span>
+        <span id="prog-pct-dec">0%</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar" id="prog-bar-dec"></div>
+      </div>
+    </div>
+
+    <button class="btn btn-danger" onclick="decryptFile()" id="btn-dec">
+      🔓 GIẢI MÃ & KHÔI PHỤC
+    </button>
+
+    <div class="status" id="status-dec"></div>
+  </div>
+
+</div>
+
+<script>
+// ─── State ─────────────────────────────────────────────
+const state = { enc: null, dec: null };
+
+// ─── Tab Switching ─────────────────────────────────────
+function switchTab(mode) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', (mode === 'encrypt' ? 0 : 1) === i);
+  });
+  document.getElementById('panel-encrypt').classList.toggle('active', mode === 'encrypt');
+  document.getElementById('panel-decrypt').classList.toggle('active', mode === 'decrypt');
+}
+
+// ─── File Handling ─────────────────────────────────────
+function handleFileSelect(e, mode) {
+  const file = e.target.files[0];
+  if (file) setFile(file, mode);
+}
+
+function handleDrop(e, mode) {
+  e.preventDefault();
+  document.getElementById(`dropzone-${mode}`).classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) setFile(file, mode);
+}
+
+function setFile(file, mode) {
+  state[mode] = file;
+  const icons = { doc:'📝', docx:'📝', xls:'📊', xlsx:'📊', ppt:'📑', pptx:'📑',
+                  pdf:'📕', txt:'📃', csv:'📋', vault:'🔒', odt:'📝', ods:'📊', odp:'📑' };
+  const ext = file.name.split('.').pop().toLowerCase();
+  const icon = icons[ext] || '📄';
+  document.getElementById(`preview-icon-${mode}`).textContent = icon;
+  document.getElementById(`preview-name-${mode}`).textContent = file.name;
+  document.getElementById(`preview-size-${mode}`).textContent =
+    formatBytes(file.size) + ' · ' + ext.toUpperCase();
+  document.getElementById(`preview-${mode}`).classList.add('show');
+  document.getElementById(`dropzone-${mode}`).style.display = 'none';
+  clearStatus(mode === 'enc' ? 'enc' : 'dec');
+}
+
+function clearFile(mode) {
+  state[mode] = null;
+  document.getElementById(`file-${mode}`).value = '';
+  document.getElementById(`preview-${mode}`).classList.remove('show');
+  document.getElementById(`dropzone-${mode}`).style.display = 'block';
+}
+
+function formatBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1048576).toFixed(2) + ' MB';
+}
+
+// ─── Password UI ────────────────────────────────────────
+function togglePass(id, btn) {
+  const el = document.getElementById(id);
+  if (el.type === 'password') { el.type = 'text'; btn.textContent = '🙈'; }
+  else { el.type = 'password'; btn.textContent = '👁️'; }
+}
+
+function updateStrength(pw) {
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (pw.length >= 12) score++;
+  if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  score = Math.min(score, 4);
+
+  const labels = ['', 'YẾU', 'TRUNG BÌNH', 'MẠNH', 'RẤT MẠNH'];
+  const colors = ['', 'weak', 'medium', 'strong', 'strong'];
+  for (let i = 1; i <= 4; i++) {
+    const bar = document.getElementById('sb' + i);
+    bar.className = 'strength-bar' + (i <= score ? ' ' + colors[score] : '');
+  }
+  const label = document.getElementById('strength-label');
+  label.textContent = pw.length === 0 ? 'Nhập mật khẩu để kiểm tra độ mạnh'
+    : `Độ mạnh: ${labels[score] || 'NHẬP MẬT KHẨU'}`;
+  label.style.color = score <= 1 ? '#ff4060' : score === 2 ? '#ffaa00' : '#00ffe0';
+}
+
+// ─── Status ─────────────────────────────────────────────
+function showStatus(id, msg, type = 'success') {
+  const el = document.getElementById('status-' + id);
+  el.className = 'status show ' + type;
+  el.innerHTML = msg;
+}
+
+function clearStatus(id) {
+  document.getElementById('status-' + id).className = 'status';
+}
+
+function setProgress(mode, pct, label) {
+  document.getElementById(`prog-${mode}`).classList.add('show');
+  document.getElementById(`prog-bar-${mode}`).style.width = pct + '%';
+  document.getElementById(`prog-pct-${mode}`).textContent = pct + '%';
+  if (label) document.getElementById(`prog-label-${mode}`).textContent = label;
+}
+
+function hideProgress(mode) {
+  document.getElementById(`prog-${mode}`).classList.remove('show');
+}
+
+// ─── Crypto Helpers ──────────────────────────────────────
+async function deriveKey(password, salt) {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw', enc.encode(password), { name: 'PBKDF2' }, false, ['deriveKey']
+  );
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false, ['encrypt', 'decrypt']
+  );
+}
+
+// ─── Encrypt ─────────────────────────────────────────────
+async function encryptFile() {
+  const file = state.enc;
+  const password = document.getElementById('pass-enc').value;
+  const outputName = document.getElementById('output-name-enc').value.trim();
+
+  if (!file) return showStatus('enc', '⚠️ Vui lòng chọn file cần mã hóa.', 'error');
+  if (!password) return showStatus('enc', '⚠️ Vui lòng nhập mật khẩu.', 'error');
+  if (password.length < 6) return showStatus('enc', '⚠️ Mật khẩu tối thiểu 6 ký tự.', 'error');
+
+  const btn = document.getElementById('btn-enc');
+  btn.disabled = true;
+  clearStatus('enc');
+
+  try {
+    setProgress('enc', 10, 'ĐỌC FILE...');
+    const buf = await file.arrayBuffer();
+
+    setProgress('enc', 30, 'TẠO KHÓA PBKDF2...');
+    const salt = crypto.getRandomValues(new Uint8Array(32));
+    const iv   = crypto.getRandomValues(new Uint8Array(12));
+    const key  = await deriveKey(password, salt);
+
+    setProgress('enc', 60, 'MÃ HÓA AES-GCM...');
+    const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, buf);
+
+    setProgress('enc', 85, 'ĐÓNG GÓI DỮ LIỆU...');
+
+    // Package: magic(8) + version(1) + salt(32) + iv(12) + originalNameLen(2) + originalName + ciphertext
+    const magic = new TextEncoder().encode('STLTHVLT'); // 8 bytes
+    const version = new Uint8Array([1]);
+    const origName = new TextEncoder().encode(file.name);
+    const nameLen = new Uint8Array([origName.length >> 8, origName.length & 0xff]);
+
+    const total = 8 + 1 + 32 + 12 + 2 + origName.length + ciphertext.byteLength;
+    const out = new Uint8Array(total);
+    let off = 0;
+    out.set(magic, off); off += 8;
+    out.set(version, off); off += 1;
+    out.set(salt, off); off += 32;
+    out.set(iv, off); off += 12;
+    out.set(nameLen, off); off += 2;
+    out.set(origName, off); off += origName.length;
+    out.set(new Uint8Array(ciphertext), off);
+
+    setProgress('enc', 100, 'HOÀN TẤT!');
+
+    const finalName = outputName
+      ? (outputName.endsWith('.vault') ? outputName : outputName + '.vault')
+      : file.name.replace(/\.[^.]+$/, '') + '.vault';
+
+    download(out, finalName, 'application/octet-stream');
+
+    setTimeout(() => {
+      hideProgress('enc');
+      showStatus('enc',
+        `✅ Đã mã hóa thành công!<br>` +
+        `📦 File: <b>${finalName}</b><br>` +
+        `📐 Kích thước: ${formatBytes(out.length)}<br>` +
+        `🔐 Thuật toán: AES-256-GCM + PBKDF2`, 'success');
+    }, 400);
+
+  } catch (e) {
+    hideProgress('enc');
+    showStatus('enc', `❌ Lỗi mã hóa: ${e.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ─── Decrypt ─────────────────────────────────────────────
+async function decryptFile() {
+  const file = state.dec;
+  const password = document.getElementById('pass-dec').value;
+
+  if (!file) return showStatus('dec', '⚠️ Vui lòng chọn file .vault cần giải mã.', 'error');
+  if (!password) return showStatus('dec', '⚠️ Vui lòng nhập mật khẩu.', 'error');
+
+  const btn = document.getElementById('btn-dec');
+  btn.disabled = true;
+  clearStatus('dec');
+
+  try {
+    setProgress('dec', 10, 'ĐỌC FILE...');
+    const buf = await file.arrayBuffer();
+    const data = new Uint8Array(buf);
+
+    // Validate magic
+    const magic = String.fromCharCode(...data.slice(0, 8));
+    if (magic !== 'STLTHVLT') {
+      throw new Error('File không hợp lệ hoặc không được tạo bởi Stealth Vault.');
+    }
+
+    let off = 9; // skip magic + version
+    const salt = data.slice(off, off + 32); off += 32;
+    const iv   = data.slice(off, off + 12); off += 12;
+    const nameLen = (data[off] << 8) | data[off + 1]; off += 2;
+    const origNameBytes = data.slice(off, off + nameLen); off += nameLen;
+    const origName = new TextDecoder().decode(origNameBytes);
+    const ciphertext = data.slice(off);
+
+    setProgress('dec', 30, 'DẪN XUẤT KHÓA...');
+    const key = await deriveKey(password, salt);
+
+    setProgress('dec', 65, 'GIẢI MÃ AES-GCM...');
+    let plaintext;
+    try {
+      plaintext = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+    } catch {
+      throw new Error('Sai mật khẩu hoặc file bị hỏng.');
+    }
+
+    setProgress('dec', 95, 'XUẤT FILE...');
+    download(new Uint8Array(plaintext), origName, 'application/octet-stream');
+
+    setTimeout(() => {
+      hideProgress('dec');
+      showStatus('dec',
+        `✅ Giải mã thành công!<br>` +
+        `📄 File gốc: <b>${origName}</b><br>` +
+        `📐 Kích thước: ${formatBytes(plaintext.byteLength)}`, 'success');
+    }, 400);
+
+  } catch (e) {
+    hideProgress('dec');
+    showStatus('dec', `❌ ${e.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ─── Download Helper ─────────────────────────────────────
+function download(data, filename, mime) {
+  const blob = new Blob([data], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+</script>
+</body>
+</html>
