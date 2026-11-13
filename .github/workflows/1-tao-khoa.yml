@@ -1,0 +1,23 @@
+name: 1 - Tạo khóa ký
+on: workflow_dispatch
+jobs:
+  keygen:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Tạo keystore
+        run: |
+          PASS=$(openssl rand -hex 16)
+          keytool -genkeypair -keystore release.jks -alias upload \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass $PASS -keypass $PASS \
+            -dname "CN=Nheo, O=Nheo, C=VN"
+          base64 -w0 release.jks > keystore.b64
+          echo "KEYSTORE_PASSWORD=$PASS" > matkhau.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: khoa-ky
+          path: |
+            release.jks
+            keystore.b64
+            matkhau.txt
+          retention-days: 1
