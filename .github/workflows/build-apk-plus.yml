@@ -1,0 +1,107 @@
+name: 4 - Build APK (có plugin)
+
+on:
+  workflow_dispatch:
+    inputs:
+      zip:
+        description: "Đường dẫn zip, vd zips/golahoc-1.0.0.zip"
+        required: true
+      app_name:
+        description: "Tên app"
+        required: true
+      app_id:
+        description: "Package ID, vd com.tuehi.golahoc"
+        required: true
+      version_name:
+        description: "Tên phiên bản, vd 1.0.0"
+        required: true
+        default: "1.0.0"
+      version_code:
+        description: "Mã phiên bản (để trống = tự tăng)"
+        required: false
+        default: ""
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+
+      - name: Giải nén web
+        run: |
+          mkdir tmp && unzip -q "${{ inputs.zip }}" -d tmp
+          SRC=$(dirname "$(find tmp -name index.html -not -path '*/node_modules/*' | head -1)")
+          mkdir -p app/www && cp -r "$SRC"/. app/www/
+          rm -f app/www/build.json
+
+      - name: Bọc bằng Capacitor
+        working-directory: app
+        run: |
+          npm init -y
+          npm i @capacitor/core@8 @capacitor/cli@8 @capacitor/android@8 @capacitor/app@8
+          CFG=$(find ../tmp -name build.json -not -path '*/node_modules/*' | head -1)
+          PLUGINS=""; PERMS=""; QUERIES=""; BG=""
+          if [ -n "$CFG" ]; then
+            CFG=$(realpath "$CFG")
+            PLUGINS=$(node -e "const c=require(process.argv[1]);console.log((c.plugins||[]).join(' '))" "$CFG")
+            PERMS=$(node -e "const c=require(process.argv[1]);console.log((c.permissions||[]).join(' '))" "$CFG")
+            QUERIES=$(node -e "const c=require(process.argv[1]);console.log((c.queries||[]).join(' '))" "$CFG")
+            BG=$(node -e "const c=require(process.argv[1]);console.log(c.bg||'')" "$CFG")
+            echo "build.json: plugins=[$PLUGINS] perms=[$PERMS] queries=[$QUERIES] bg=[$BG]"
+          fi
+          if [ -n "$PLUGINS" ]; then npm i $PLUGINS; fi
+          npx cap init "${{ inputs.app_name }}" "${{ inputs.app_id }}" --web-dir www
+          if [ -n "$BG" ]; then
+            if [ -f capacitor.config.json ]; then node -e "const fs=require('fs');const f='capacitor.config.json';const c=JSON.parse(fs.readFileSync(f,'utf8'));c.backgroundColor=process.argv[1];fs.writeFileSync(f,JSON.stringify(c,null,2))" "$BG"; else sed -i "s|webDir: 'www'|webDir: 'www',\n  backgroundColor: '$BG'|" capacitor.config.ts; fi
+          fi
+          npx cap add android
+          npx cap sync android
+          MAN=android/app/src/main/AndroidManifest.xml
+          for P in $PERMS; do grep -q "android.permission.$P\"" $MAN || sed -i "s|</manifest>|    <uses-permission android:name=\"android.permission.$P\" />\n</manifest>|" $MAN; done
+          if [ -n "$QUERIES" ]; then
+            Q="    <queries>"; for A in $QUERIES; do Q="$Q<intent><action android:name=\"$A\" /></intent>"; done; Q="$Q</queries>"
+            sed -i "s|</manifest>|$Q\n</manifest>|" $MAN
+          fi
+          VC="${{ inputs.version_code }}"; if [ -z "$VC" ]; then VC=$(( ${{ github.run_number }} + 2000 )); fi
+          sed -i -E "s/versionCode [0-9]+/versionCode $VC/; s/versionName \"[^\"]*\"/versionName \"${{ inputs.version_name }}\"/" android/app/build.gradle
+          sed -i 's/minSdkVersion = 23/minSdkVersion = 24/' android/variables.gradle
+          RES=$(find ../tmp -type d -name android-res | head -1)
+          if [ -n "$RES" ]; then cp -r "$RES"/. android/app/src/main/res/; echo "Đã chép icon từ $RES"; fi
+          if [ -n "$BG" ]; then sed -i "s|<item name=\"android:background\">@drawable/splash</item>|&\n        <item name=\"windowSplashScreenBackground\">$BG</item>|" android/app/src/main/res/values/styles.xml; fi
+          grep -E "versionCode|versionName" android/app/build.gradle
+          cat $MAN
+
+      - name: Build APK
+        working-directory: app/android
+        run: ./gradlew assembleRelease
+
+      - name: Ký APK
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > release.jks
+          jarsigner -keystore release.jks \
+            -storepass "$KEYSTORE_PASSWORD" -keypass "$KEYSTORE_PASSWORD" \
+            -sigalg SHA256withRSA -digestalg SHA-256 \
+            app/android/app/build/outputs/apk/release/app-release-unsigned.apk upload
+          BUILD_TOOLS=$(ls -d /usr/local/lib/android/sdk/build-tools/* | sort -V | tail -1)
+          "$BUILD_TOOLS/zipalign" -f -p 4 \
+            app/android/app/build/outputs/apk/release/app-release-unsigned.apk \
+            app/android/app/build/outputs/apk/release/app-release-aligned.apk
+          "$BUILD_TOOLS/apksigner" sign \
+            --ks release.jks \
+            --ks-key-alias upload \
+            --ks-pass "env:KEYSTORE_PASSWORD" \
+            --key-pass "env:KEYSTORE_PASSWORD" \
+            --out app/android/app/build/outputs/apk/release/app-release.apk \
+            app/android/app/build/outputs/apk/release/app-release-aligned.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: app/android/app/build/outputs/apk/release/app-release.apk
